@@ -151,8 +151,10 @@ struct thermo
   double annihilation_f_halo; /** takes the contribution of DM annihilation in halos into account*/
   double annihilation_z_halo; /** characteristic redshift for DM annihilation in halos*/
 
-  short has_coupling_gcdm; /** indicate wether a possible coupling between CDM and photons should be taken into account */
-  double u_gcdm; /** strength of the photon-DM coupling. Only relevant if has_coupling_gcdm set TRUE*/
+  short has_coupling_gcdm;   /** indicate wether a possible coupling between CDM and photons should be taken into account */
+  double u_gcdm;             /** strength of the photon-DM coupling. Only relevant if has_coupling_gcdm set TRUE*/
+  short has_gcdm_soundspeed; /** should the gcdm sound speed be taken into account in the evolution of perturbations */
+  double m_gcdm;             /**the dm mass in GeV, only important if has_gcdm_soundspeed is set to True */
 
   //@}
 
@@ -165,7 +167,7 @@ struct thermo
   int index_th_tau_d;         /**< Baryon drag optical depth */
   int index_th_ddkappa;       /**< scattering rate derivative \f$ d^2 \kappa / d \tau^2 \f$ */
   int index_th_dddkappa;      /**< scattering rate second derivative \f$ d^3 \kappa / d \tau^3 \f$ */
-  int index_th_exp_m_kappa;  /**< \f$ exp^{-\kappa} \f$ */
+  int index_th_exp_m_kappa;   /**< \f$ exp^{-\kappa} \f$ */
   int index_th_g;             /**< visibility function \f$ g = (d \kappa / d \tau) * exp^{-\kappa} \f$ */
   int index_th_dg;            /**< visibility function derivative \f$ (d g / d \tau) \f$ */
   int index_th_ddg;           /**< visibility function second derivative \f$ (d^2 g / d \tau^2) \f$ */
@@ -181,6 +183,7 @@ struct thermo
   int index_th_ddmu_gcdm;     /**< its derivative w.r.t conformal time*/
   int index_th_dddmu_gcdm;    /**< second derivative w.r.t. conformal time*/
   int index_th_mu_gcdm;       /**< integral w.r.t. conformal time. For internal use only*/
+  int index_th_cgcdm2;        /**< the gcdm sound speed */
 
   //@}
 

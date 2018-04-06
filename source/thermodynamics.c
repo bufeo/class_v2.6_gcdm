@@ -725,7 +725,7 @@ int thermodynamics_init(
 	
       }
     else
-      {
+      { 
 	
 	/** - ---> compute g */
 	g = pth->thermodynamics_table[index_tau*pth->th_size+pth->index_th_dkappa] *
