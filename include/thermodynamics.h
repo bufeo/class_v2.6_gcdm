@@ -650,7 +650,7 @@ extern "C" {
 						  char titles[_MAXTITLESTRINGLENGTH_]
 						  );
 
-  int thermodynamics_gcdmsoundspedd_output_data(struct background * pba,
+  int thermodynamics_gcdmsoundspeed_output_data(struct background * pba,
 						struct thermo *pth,
 						int number_of_titles,
 						double *data

@@ -1257,6 +1257,42 @@ int output_thermodynamics(
   free(data);
   fclose(thermofile);
 
+  /** if gcdm soundspeed was requested output a second file which esentially contains the interpolation table*/
+  if(pth->has_coupling_gcdm && pth->has_gcdm_soundspeed)
+    {
+      class_call(thermodynamics_gcdmsoundspeed_output_titles(pba,pth,titles),
+		 pth->error_message,
+		 pop->error_message);
+      number_of_titles = get_number_of_titles(titles);
+      size_data = number_of_titles*pth->tt_size_gcdmsoundspeed;
+      class_alloc(data,sizeof(double)*size_data,pop->error_message);
+      
+      class_call(thermodynamics_gcdmsoundspeed_output_data(pba,
+							   pth,
+							   number_of_titles,
+							   data),
+		 pth->error_message,
+		 pop->error_message);
+      
+      sprintf(file_name,"%s%s",pop->root,"gcdm-soundspeed.dat");
+      class_open(thermofile,file_name,"w",pop->error_message);
+
+      if (pop->write_header == _TRUE_) {
+	fprintf(thermofile,"# Table of gcdm sound speed and Temperature\n");
+	fprintf(thermofile,"# The following notation is used in column titles:\n");
+	fprintf(thermofile,"#    T_gcdm = gcdm temperature [K] \n");
+	fprintf(thermofile,"#  c_gcdm^2 = baryon sound speed squared \n");
+      }
+
+      output_print_data(thermofile,
+			titles,
+			data,
+			size_data);
+
+      free(data);
+      fclose(thermofile); 
+    }
+
   return _SUCCESS_;
 
 }
