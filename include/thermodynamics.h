@@ -644,6 +644,17 @@ extern "C" {
 					   void * fixed_parameters,
 					   ErrorMsg error_message
 					   );
+
+  int thermodynamics_gcdmsoundspeed_output_titles(struct background * pba,
+						  struct thermo *pth,
+						  char titles[_MAXTITLESTRINGLENGTH_]
+						  );
+
+  int thermodynamics_gcdmsoundspedd_output_data(struct background * pba,
+						struct thermo *pth,
+						int number_of_titles,
+						double *data
+						);
 #ifdef __cplusplus
 }
 #endif

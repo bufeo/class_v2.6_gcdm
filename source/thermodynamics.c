@@ -4109,59 +4109,104 @@ int thermodynamics_gcdmsoundspeed(struct precision* ppr,
 }
 
 
-  int thermodynamics_gcdmsoundspeed_derivs(double z,
-					   double * y,
-					   double * dy,
-					   void * fixed_parameters,
-					   ErrorMsg error_message
-					   ){
+int thermodynamics_gcdmsoundspeed_derivs(double z,
+					 double * y,
+					 double * dy,
+					 void * fixed_parameters,
+					 ErrorMsg error_message
+					 ){
+  
+  /** - define local variables */
+  double Tg, Tgcdm;
+  double dmu;
+  double tau;
+  double H, a, rho_g, rho_gcdm;
+  int last_index;
+  
+  struct thermodynamics_gcdmsoundspeed_parameters_and_workspace *ptpaw;
+  struct background *pba;
+  struct thermo *pth;
+  double *pvecback;
+  
+  /* get parameters from workspace structure */
+  ptpaw = fixed_parameters;
+  pba = ptpaw -> pba;
+  pth = ptpaw -> pth;
+  pvecback = ptpaw -> pvecback;
+  
+  Tgcdm = y[0];
+  Tg    = pba->T_cmb*(1.+z);
+  
+  /** - get background parameters */
+  class_call(background_tau_of_z(pba,
+				 z,
+				 &tau),
+	     pba->error_message,
+	     error_message);
+  class_call(background_at_tau(pba,
+			       tau,
+			       pba->normal_info,
+			       pba->inter_normal,
+			       &last_index,
+			       pvecback),
+	     pba->error_message,
+	     error_message);
+  
+  H        = pvecback[pba->index_bg_H];
+  a        = pvecback[pba->index_bg_a];
+  rho_g    = pvecback[pba->index_bg_rho_g];
+  rho_gcdm = pvecback[pba->index_bg_rho_cdm];
+  
+  /* combute scattering rate */
+  dmu = (1.+z)*(1.+z)*pth->u_gcdm*3.*pba->H0*pba->H0/8./_PI_/_G_*pba->Omega0_cdm*pow(_c_,4)*_sigma_/1.e11/_eV_/_Mpc_over_m_;
 
-    /** - define local variables */
-    double Tg, Tgcdm;
-    double dmu;
-    double tau;
-    double H, a, rho_g, rho_gcdm;
-    int last_index;
-    
-    struct thermodynamics_gcdmsoundspeed_parameters_and_workspace *ptpaw;
-    struct background *pba;
-    struct thermo *pth;
-    double *pvecback;
+  /* write dT_gcdm/dz */
+  dy[0] = 2.*a*Tgcdm - 8./3.*dmu/H*rho_g/rho_gcdm*(Tg-Tgcdm);    
+  
+  return _SUCCESS_;
+}
 
-    /* get parameters from workspace structure */
-    ptpaw = fixed_parameters;
-    pba = ptpaw -> pba;
-    pth = ptpaw -> pth;
-    pvecback = ptpaw -> pvecback;
 
-    Tgcdm = y[0];
-    Tg    = pba->T_cmb*(1.+z);
+int thermodynamics_gcdmsoundspeed_output_titles(struct background * pba,
+						struct thermo *pth,
+						char titles[_MAXTITLESTRINGLENGTH_]
+						){
+  class_store_columntitle(titles, "z", _TRUE_);
+  class_store_columntitle(titles, "conf. time [Mpc]", _TRUE_);
+  class_store_columntitle(titles, "c_gcdm^2", _TRUE_);
+  class_store_columntitle(titles, "T_gcdm", _TRUE_);
+  
+  return _SUCCESS_;
+}
 
-    /** - get background parameters */
+
+int thermodynamics_gcdmsoundspedd_output_data(struct background * pba,
+					      struct thermo *pth,
+					      int number_of_titles,
+					      double *data
+					      ){
+
+  int index_z, storeidx;
+  double *dataptr, *pvecthermo;
+  double z,tau;
+
+  for (index_z=0; index_z<pth->tt_size_gcdmsoundspeed; index_z++){
+    dataptr = data + index_z*number_of_titles;
+    pvecthermo = pth->thermodynamics_table_gcdmsoundspeed+index_z*pth->th_size_gcdmsoundspeed;
+    z = pth->z_table_gcdmsoundspeed[index_z];
+    storeidx=0;
+
     class_call(background_tau_of_z(pba,
-				   z,
-				   &tau),
-	       pba->error_message,
-	       error_message);
-    class_call(background_at_tau(pba,
-				 tau,
-				 pba->normal_info,
-				 pba->inter_normal,
-				 &last_index,
-				 pvecback),
-	       pba->error_message,
-	       error_message);
+                                   z,
+                                   &tau),
+               pba->error_message,
+               pth->error_message);
+  
+    class_store_double(dataptr,z,_TRUE_,storeidx);
+    class_store_double(dataptr,tau,_TRUE_,storeidx);
+    class_store_double(dataptr,pvecthermo[pth->index_th_gcdmsoundspeed_c],_TRUE_,storeidx);
+    class_store_double(dataptr,pvecthermo[pth->index_th_gcdmsoundspeed_T],_TRUE_,storeidx);
 
-    H        = pvecback[pba->index_bg_H];
-    a        = pvecback[pba->index_bg_a];
-    rho_g    = pvecback[pba->index_bg_rho_g];
-    rho_gcdm = pvecback[pba->index_bg_rho_cdm];
-
-    /* combute scattering rate */
-    dmu = (1.+z)*(1.+z)*pth->u_gcdm*3.*pba->H0*pba->H0/8./_PI_/_G_*pba->Omega0_cdm*pow(_c_,4)*_sigma_/1.e11/_eV_/_Mpc_over_m_;
-
-    /* write dT_gcdm/dz */
-    dy[0] = 2.*a*Tgcdm - 8./3.*dmu/H*rho_g/rho_gcdm*(Tg-Tgcdm);    
-
-    return _SUCCESS_;
   }
+  return _SUCCESS_;
+}
