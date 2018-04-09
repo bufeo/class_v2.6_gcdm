@@ -1312,6 +1312,9 @@ int input_read_parameters(
 
   if (pth->has_coupling_gcdm == _TRUE_ && pth->has_gcdm_soundspeed == _TRUE_){
     class_read_double("m_gcdm",pth->m_gcdm);
+    class_read_double("start_gcdmsoundspeed_at_h_over_dmu", ppr->start_gcdmsoundspeed_at_h_over_dmu);
+    class_read_double("gcdmsoundspeed_Nz", ppr->gcdmsoundspeed_Nz);
+    class_read_double("tol_z_gcdmsoundspeed", ppr->tol_z_gcdmsoundspeed);
   }
 
   /** (c) define which perturbations and sources should be computed, and down to which scale */
@@ -3300,6 +3303,11 @@ int input_default_precision ( struct precision * ppr ) {
   /* general */
 
   ppr->thermo_rate_smoothing_radius=50;
+
+  /* for gcdm soundspeed */
+  ppr->start_gcdmsoundspeed_at_h_over_dmu = 0.01;
+  ppr->gcdmsoundspeed_Nz = 20000;
+  ppr->tol_z_gcdmsoundspeed = 0.01;
 
   /**
    * - parameters related to the perturbations

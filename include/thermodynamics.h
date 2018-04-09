@@ -183,7 +183,6 @@ struct thermo
   int index_th_ddmu_gcdm;     /**< its derivative w.r.t conformal time*/
   int index_th_dddmu_gcdm;    /**< second derivative w.r.t. conformal time*/
   int index_th_mu_gcdm;       /**< integral w.r.t. conformal time. For internal use only*/
-  int index_th_cgcdm2;        /**< the gcdm sound speed */
 
   //@}
 
@@ -263,6 +262,18 @@ struct thermo
   ErrorMsg error_message; /**< zone for writing error messages */
 
   //@}
+
+  /** @name - gcdm soundspeed interpolation tables and indicec */
+  int index_th_gcdmsoundspeed_c;
+  int index_th_gcdmsoundspeed_T;
+
+  int th_size_gcdmsoundspeed; /**< number of columns in the soundspeed table */
+  int tt_size_gcdmsoundspeed; /**< number of rows in the soundspeed table, i.e. number of z-steps */
+
+  double* z_table_gcdmsoundspeed;
+  double* thermodynamics_table_gcdmsoundspeed;
+
+ 
 
 };
 
@@ -462,6 +473,17 @@ struct thermodynamics_parameters_and_workspace {
 
 };
 
+struct thermodynamics_gcdmsoundspeed_parameters_and_workspace {
+
+  /* structures containing fixed input parameters (indices, ...) */
+  struct background * pba;
+  struct thermo * pth;
+
+  /* workspace */
+  double * pvecback;
+
+};
+
 /**************************************************************/
 /* @cond INCLUDE_WITH_DOXYGEN */
 /*
@@ -610,6 +632,18 @@ extern "C" {
                           double width,
                           double * result);
 
+  int thermodynamics_gcdmsoundspeed(struct precision* ppr,
+				    struct background* pba,
+				    struct thermo* pth,
+				    double* pvecback
+				    );
+
+  int thermodynamics_gcdmsoundspeed_derivs(double z,
+					   double * y,
+					   double * dy,
+					   void * fixed_parameters,
+					   ErrorMsg error_message
+					   );
 #ifdef __cplusplus
 }
 #endif

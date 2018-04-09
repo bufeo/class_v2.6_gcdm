@@ -490,6 +490,9 @@ struct precision
 
   int thermo_rate_smoothing_radius; /**< plays a minor (almost aesthetic) role in the definition of the variation rate of thermodynamical quantities */
 
+  double start_gcdmsoundspeed_at_h_over_dmu; /**< decrease to start integrating T_gcdm earlier */
+  double gcdmsoundspeed_Nz;                  /**< total number of steps in the T_gcdm integration */
+  double tol_z_gcdmsoundspeed;
   //@}
 
   /** @name - parameters related to the perturbation */

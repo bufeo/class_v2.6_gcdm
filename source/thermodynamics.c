@@ -319,6 +319,11 @@ int thermodynamics_init(
 		 "cdm-photon coupling not implememnted with non-flat curvature");
     }
 
+  if (pth->has_gcdm_soundspeed==_TRUE_){
+    class_test(pth->has_coupling_gcdm==_FALSE_,
+	       pth->error_message,
+	       "gcdm soundspeed requested but gcdm coupling turned off");
+  }
   /** - compute and check primordial Helium fraction  */
 
   /* Y_He */
@@ -409,6 +414,13 @@ int thermodynamics_init(
   class_call(thermodynamics_indices(pth,preco,preio),
              pth->error_message,
              pth->error_message);
+
+  /** - if requested compute the gcdm sound speed */
+  if(pth->has_coupling_gcdm==_TRUE_ && pth->has_gcdm_soundspeed==_TRUE_){
+    class_call(thermodynamics_gcdmsoundspeed(ppr, pba, pth, pvecback),
+	       pth->error_message,
+	       pth->error_message);
+  }
 
   /** - solve recombination and store values of \f$ z, x_e, d \kappa / d \tau, T_b, c_b^2 \f$ with thermodynamics_recombination() */
 
@@ -1046,6 +1058,19 @@ int thermodynamics_indices(
 
   /* end of indices */
   pth->th_size = index;
+
+  /** indices in the gcdm_soundspeed table also belong to the termo structure */
+  /** however the start from zero again */
+  if(pth->has_coupling_gcdm==_TRUE_ && pth->has_gcdm_soundspeed==_TRUE_){
+    index = 0;
+    pth->index_th_gcdmsoundspeed_T = index;
+    index++;
+    pth->index_th_gcdmsoundspeed_c = index;
+    index++;
+
+    pth->th_size_gcdmsoundspeed = index;
+  }
+
 
   /** - initialization of all indices and flags in recombination structure */
   index = 0;
@@ -3885,3 +3910,258 @@ int thermodynamics_tanh(double x,
 
   return _SUCCESS_;
 }
+
+int thermodynamics_gcdmsoundspeed(struct precision* ppr,
+				  struct background* pba,
+				  struct thermo* pth,
+				  double* pvecback
+				  ) {
+  /** - define local variables */
+
+  /* vecor of perturbations to be integrated: T_gcdm */
+  double y[1], dy[1];
+
+  /* further variables */
+  double zinitial;
+  double tau_early, tau_late, tau_mid;
+  double z_early, z_late, z_mid;
+  double zstart, zend, z;
+  double Tcmb;
+  double dmu, cgcdm2, Tgcdm;
+  double H, a, rho_g, rho_gcdm, Tg, tau, dlnTdlna;
+  int i, Nz;
+  int first_index_back, last_index;
+
+  /* auxilliary structures for the integrator */
+  struct generic_integrator_workspace gi;
+  struct thermodynamics_gcdmsoundspeed_parameters_and_workspace tpaw;
+
+  /** - allogate memory for the gcdm soundspeed interpolation table */
+  pth->tt_size_gcdmsoundspeed = ppr->gcdmsoundspeed_Nz;
+  class_alloc(pth->thermodynamics_table_gcdmsoundspeed,
+	      pth->tt_size_gcdmsoundspeed*pth->th_size_gcdmsoundspeed*sizeof(double),
+	      pth->error_message);
+
+  /** - initialize the generic integrator */
+  class_call(initialize_generic_integrator(1, &gi),
+	     gi.error_message,
+	     pth->error_message);
+
+  /** - define fields of the workspace */
+  tpaw.pba = pba;
+  tpaw.pth = pth;
+  tpaw.pvecback = pvecback;
+  
+
+  /** - read in parameters */
+  Tcmb = pba->T_cmb;
+
+  /** - find initial time */
+
+  /* check the condition is sattisfied at the beginn of the background integration */
+  z_early = pba->z_table[0];
+  class_call(background_tau_of_z(pba,
+				 z_early,
+				 &tau_early),
+	     pba->error_message,
+	     pth->error_message);
+  class_call(background_at_tau(pba,
+			       tau_early,
+			       pba->normal_info,
+			       pba->inter_normal,
+			       &first_index_back,
+			       pvecback),
+	     pba->error_message,
+	     pth->error_message);
+
+  dmu = (1.+z_early)*(1.+z_early)*pth->u_gcdm*3.*pba->H0*pba->H0/8./_PI_/_G_*pba->Omega0_cdm*pow(_c_,4)*_sigma_/1.e11/_eV_/_Mpc_over_m_;
+
+  class_test((pvecback[pba->index_bg_H]*pvecback[pba->index_bg_a])/
+	     (3.*pvecback[pba->index_bg_rho_g]/4./pvecback[pba->index_bg_rho_cdm]*dmu ) > 
+	     ppr->start_gcdmsoundspeed_at_h_over_dmu,
+	     pth->error_message,
+	     "can not start gcdm sound speed integration as early as requested. Increase parameter 'start_gcdm_soundspeed_at_h_over_dmu', start background integration earlier or  whicht gcdm sound speed off.\n");
+
+
+  /* if the condition is still sattisfied at the beginn of recombination start integration then */
+  z_late = ppr->recfast_z_initial;
+  class_call(background_tau_of_z(pba,
+				 z_late,
+				 &tau_late),
+	     pba->error_message,
+	     pth->error_message);
+  class_call(background_at_tau(pba,
+			       tau_late,
+			       pba->normal_info,
+			       pba->inter_normal,
+			       &first_index_back,
+			       pvecback),
+	     pba->error_message,
+	     pth->error_message);
+  dmu = (1.+z_late)*(1.+z_late)*pth->u_gcdm*3.*pba->H0*pba->H0/8./_PI_/_G_*pba->Omega0_cdm*pow(_c_,4)*_sigma_/1.e11/_eV_/_Mpc_over_m_;
+  if (pvecback[pba->index_bg_H]*pvecback[pba->index_bg_a]/
+      (3.*pvecback[pba->index_bg_rho_g]/4./pvecback[pba->index_bg_rho_cdm]*dmu) <
+      ppr->start_gcdmsoundspeed_at_h_over_dmu){
+    zinitial = z_late;
+  }
+
+  /* otherwise find zinital by bisection */
+  else{
+    z_mid = 0.5*(z_late+z_early);
+
+      while ((z_early - z_late)/z_late > ppr->tol_z_gcdmsoundspeed) {
+	class_call(background_tau_of_z(pba,
+				       z_mid,
+				       &tau_mid),
+		   pba->error_message,
+		   pth->error_message);
+	class_call(background_at_tau(pba,
+				     tau_mid,
+				     pba->normal_info,
+				     pba->inter_normal,
+				     &first_index_back,
+				     pvecback),
+		   pba->error_message,
+		   pth->error_message);
+	dmu = (1.+z_mid)*(1.+z_mid)*pth->u_gcdm*3.*pba->H0*pba->H0/8./_PI_/_G_*pba->Omega0_cdm*pow(_c_,4)*_sigma_/1.e11/_eV_/_Mpc_over_m_;
+      
+	if (pvecback[pba->index_bg_H]*pvecback[pba->index_bg_a]/
+	    (3.*pvecback[pba->index_bg_rho_g]/4./pvecback[pba->index_bg_rho_cdm]*dmu) <
+	    ppr->start_gcdmsoundspeed_at_h_over_dmu)
+	  z_late = z_mid;
+	else
+	  z_early = z_mid;
+	
+	z_mid = 0.5*(z_late + z_early);
+      }
+    zinitial = z_mid;
+  }
+  
+
+  /** - impose initial consditions */
+  z = zinitial;
+  y[0] = Tcmb*(1.+z);
+  
+
+  /** - loop over redshifts,
+        for each step find T_gcdm using the generic integrator
+	compute  dT_gcdm/dz calling thermodynamics_gcdmsoundspeed_derivs
+	compute c_gcdm^2
+	store results in the thermodynamics_table_gcdm */
+  for (i=0; i<Nz; i++){
+
+    zstart = zinitial * (double)(Nz-i)/  (double)Nz;
+    zend   = zinitial * (double)(Nz-i-1)/(double)Nz;
+    z = zend;
+
+    /* numerical integration to find T_gcdm */
+    class_call(generic_integrator(thermodynamics_gcdmsoundspeed_derivs,
+				  zstart,
+				  zend,
+				  y,
+				  &tpaw,
+				  ppr->tol_thermo_integration,
+				  ppr->smallest_allowed_variation,
+				  &gi),
+	       gi.error_message,
+	       pth->error_message);
+
+    Tgcdm = y[0];
+
+    /* get background quantities at z */
+    class_call(background_tau_of_z(pba,
+				   z,
+				   &tau),
+	       pba->error_message,
+	       pth->error_message);
+
+    class_call(background_at_tau(pba,
+				 tau,
+				 pba->normal_info,
+				 pba->inter_normal,
+				 &last_index,
+				 pvecback),
+	       pba->error_message,
+	       pth->error_message);
+
+    H        = pvecback[pba->index_bg_H];
+    a        = pvecback[pba->index_bg_a];
+    rho_g    = pvecback[pba->index_bg_rho_g];
+    rho_gcdm = pvecback[pba->index_bg_rho_cdm];
+
+    /* compute c_gcdm^2 */
+    dmu = (1.+z)*(1.+z)*pth->u_gcdm*3.*pba->H0*pba->H0/8./_PI_/_G_*pba->Omega0_cdm*pow(_c_,4)*_sigma_/1.e11/_eV_/_Mpc_over_m_;
+    dlnTdlna = -2. + 8./3.*rho_g/rho_gcdm*dmu/H*(Tg-Tgcdm)/a/Tgcdm;
+    cgcdm2 = _k_B_/pth->m_gcdm/_eV_*Tgcdm*(1. -1./3.*dlnTdlna);
+    
+    /* store results to the soundspeed table */
+    pth->z_table_gcdmsoundspeed[Nz-i-1] = zend;
+    pth->thermodynamics_table_gcdmsoundspeed[(Nz-i-1)*pth->th_size_gcdmsoundspeed+pth->index_th_gcdmsoundspeed_c] = cgcdm2;
+    pth->thermodynamics_table_gcdmsoundspeed[(Nz-i-1)*pth->th_size_gcdmsoundspeed+pth->index_th_gcdmsoundspeed_T] = Tgcdm;
+  }
+
+  /* clean up the generic integrator */
+  class_call(cleanup_generic_integrator(&gi),
+	     gi.error_message,
+	     pth->error_message);
+
+  return _SUCCESS_;
+}
+
+
+  int thermodynamics_gcdmsoundspeed_derivs(double z,
+					   double * y,
+					   double * dy,
+					   void * fixed_parameters,
+					   ErrorMsg error_message
+					   ){
+
+    /** - define local variables */
+    double Tg, Tgcdm;
+    double dmu;
+    double tau;
+    double H, a, rho_g, rho_gcdm;
+    int last_index;
+    
+    struct thermodynamics_gcdmsoundspeed_parameters_and_workspace *ptpaw;
+    struct background *pba;
+    struct thermo *pth;
+    double *pvecback;
+
+    /* get parameters from workspace structure */
+    ptpaw = fixed_parameters;
+    pba = ptpaw -> pba;
+    pth = ptpaw -> pth;
+    pvecback = ptpaw -> pvecback;
+
+    Tgcdm = y[0];
+    Tg    = pba->T_cmb*(1.+z);
+
+    /** - get background parameters */
+    class_call(background_tau_of_z(pba,
+				   z,
+				   &tau),
+	       pba->error_message,
+	       error_message);
+    class_call(background_at_tau(pba,
+				 tau,
+				 pba->normal_info,
+				 pba->inter_normal,
+				 &last_index,
+				 pvecback),
+	       pba->error_message,
+	       error_message);
+
+    H        = pvecback[pba->index_bg_H];
+    a        = pvecback[pba->index_bg_a];
+    rho_g    = pvecback[pba->index_bg_rho_g];
+    rho_gcdm = pvecback[pba->index_bg_rho_cdm];
+
+    /* combute scattering rate */
+    dmu = (1.+z)*(1.+z)*pth->u_gcdm*3.*pba->H0*pba->H0/8./_PI_/_G_*pba->Omega0_cdm*pow(_c_,4)*_sigma_/1.e11/_eV_/_Mpc_over_m_;
+
+    /* write dT_gcdm/dz */
+    dy[0] = 2.*a*Tgcdm - 8./3.*dmu/H*rho_g/rho_gcdm*(Tg-Tgcdm);    
+
+    return _SUCCESS_;
+  }
