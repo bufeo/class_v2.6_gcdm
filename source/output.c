@@ -1260,6 +1260,9 @@ int output_thermodynamics(
   /** if gcdm soundspeed was requested output a second file which esentially contains the interpolation table*/
   if(pth->has_coupling_gcdm && pth->has_gcdm_soundspeed)
     {
+      char titles[_MAXTITLESTRINGLENGTH_]={0};
+      double * data;
+
       class_call(thermodynamics_gcdmsoundspeed_output_titles(pba,pth,titles),
 		 pth->error_message,
 		 pop->error_message);
@@ -1277,6 +1280,7 @@ int output_thermodynamics(
       sprintf(file_name,"%s%s",pop->root,"gcdm-soundspeed.dat");
       class_open(thermofile,file_name,"w",pop->error_message);
 
+      printf("write\n");
       if (pop->write_header == _TRUE_) {
 	fprintf(thermofile,"# Table of gcdm sound speed and Temperature\n");
 	fprintf(thermofile,"# The following notation is used in column titles:\n");

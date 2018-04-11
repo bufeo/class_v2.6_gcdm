@@ -476,11 +476,12 @@ struct thermodynamics_parameters_and_workspace {
 struct thermodynamics_gcdmsoundspeed_parameters_and_workspace {
 
   /* structures containing fixed input parameters (indices, ...) */
-  struct background * pba;
-  struct thermo * pth;
+  struct background *pba;
+  struct precision *ppr;
+  struct thermo *pth;
 
   /* workspace */
-  double * pvecback;
+  double *pvecback;
 
 };
 
