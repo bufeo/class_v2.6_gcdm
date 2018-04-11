@@ -3127,7 +3127,7 @@ int thermodynamics_recombination_with_recfast(
 
   /** - initialize generic integrator with initialize_generic_integrator() */
   class_call(initialize_generic_integrator(_RECFAST_INTEG_SIZE_, &gi),
-	     gi.error_message,
+  	     gi.error_message,
 	     pth->error_message);
 
   /** - read a few precision/cosmological parameters */
@@ -3449,7 +3449,6 @@ int thermodynamics_recombination_with_recfast(
   }
 
   /** - cleanup generic integrator with cleanup_generic_integrator() */
-
   class_call(cleanup_generic_integrator(&gi),
              gi.error_message,
              pth->error_message);
@@ -3946,11 +3945,16 @@ int thermodynamics_gcdmsoundspeed(struct precision* ppr,
 	      pth->tt_size_gcdmsoundspeed*pth->th_size_gcdmsoundspeed*sizeof(double),
 	      pth->error_message);
 
+  /** - allogate memory for the gcdm soundspeed redshift table */
+  class_alloc(pth->z_table_gcdmsoundspeed,
+	      pth->tt_size_gcdmsoundspeed*sizeof(double),
+	      pth->error_message);
+
   /** - initialize the generic integrator */
   class_call(initialize_generic_integrator(1, &gi),
-	     gi.error_message,
-	     pth->error_message);
-
+  	     gi.error_message,
+  	     pth->error_message);
+  
   /** - define fields of the workspace */
   tpaw.pba = pba;
   tpaw.pth = pth;
@@ -4041,7 +4045,6 @@ int thermodynamics_gcdmsoundspeed(struct precision* ppr,
     zinitial = z_mid;
   }
   
-
   /** - impose initial consditions */
   z = zinitial;
   y[0] = Tcmb*(1.+z);
@@ -4054,12 +4057,13 @@ int thermodynamics_gcdmsoundspeed(struct precision* ppr,
 	compute  dT_gcdm/dz calling thermodynamics_gcdmsoundspeed_derivs
 	compute c_gcdm^2
 	store results in the thermodynamics_table_gcdm */
+
   for (i=0; i<Nz; i++){
 
     zstart = zinitial * (double)(Nz-i)/  (double)Nz;
     zend   = zinitial * (double)(Nz-i-1)/(double)Nz;
     z = zend;
-
+    
     /* numerical integration to find T_gcdm */
     class_call(generic_integrator(thermodynamics_gcdmsoundspeed_derivs,
 				  zstart,
@@ -4071,8 +4075,6 @@ int thermodynamics_gcdmsoundspeed(struct precision* ppr,
 				  &gi),
 	       gi.error_message,
 	       pth->error_message);
-
-    printf("Tgcdm");
     Tgcdm = y[0];
 
     /* get background quantities at z */
@@ -4090,7 +4092,7 @@ int thermodynamics_gcdmsoundspeed(struct precision* ppr,
 				 pvecback),
 	       pba->error_message,
 	       pth->error_message);
-
+    
     H        = pvecback[pba->index_bg_H];
     a        = pvecback[pba->index_bg_a];
     rho_g    = pvecback[pba->index_bg_rho_g];
@@ -4133,7 +4135,7 @@ int thermodynamics_gcdmsoundspeed_derivs(double z,
   struct background *pba;
   struct thermo *pth;
   double *pvecback;
-  
+ 
   /* get parameters from workspace structure */
   ptpaw = fixed_parameters;
   pba = ptpaw->pba;
@@ -4142,14 +4144,13 @@ int thermodynamics_gcdmsoundspeed_derivs(double z,
   
   Tgcdm = y[0];
   Tg    = pba->T_cmb*(1.+z);
-  printf("T_step = %f\n", Tgcdm);
   
   /** - get background parameters */
   class_call(background_tau_of_z(pba,
-				 z,
-				 &tau),
-	     pba->error_message,
-	     error_message);
+  				 z,
+  				 &tau),
+  	     pba->error_message,
+  	     error_message);
   class_call(background_at_tau(pba,
 			       tau,
 			       pba->normal_info,
@@ -4169,8 +4170,6 @@ int thermodynamics_gcdmsoundspeed_derivs(double z,
 
   /* write dT_gcdm/dz */
   dy[0] = 2.*a*Tgcdm - 8./3.*dmu/H*rho_g/rho_gcdm*(Tg-Tgcdm);  
-  printf("%f\n", dy[0]);
-  printf("%f\n",  y[0]);
   
   return _SUCCESS_;
 }
