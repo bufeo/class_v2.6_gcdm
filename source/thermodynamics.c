@@ -3920,7 +3920,7 @@ int thermodynamics_gcdmsoundspeed(struct precision* ppr,
  /** - define local variables */
 
   /* vecor of perturbations to be integrated: T_gcdm */
-  double y[1];
+  double y[1], dy[1];
 
   /* further variables */
   double zinitial;
@@ -3967,7 +3967,7 @@ int thermodynamics_gcdmsoundspeed(struct precision* ppr,
   /** - find initial time */
 
   /* check the condition is sattisfied at the beginn of the background integration */
-  z_early = pba->z_table[0];
+  z_early = pba->z_table[0];  
   class_call(background_tau_of_z(pba,
 				 z_early,
 				 &tau_early),
@@ -4050,7 +4050,6 @@ int thermodynamics_gcdmsoundspeed(struct precision* ppr,
   y[0] = Tcmb*(1.+z);
   
   printf(" z_initial = %f\n",z);
-  printf("T_initial = %f\n", y[0]);
 
   /** - loop over redshifts,
         for each step find T_gcdm using the generic integrator
@@ -4077,31 +4076,12 @@ int thermodynamics_gcdmsoundspeed(struct precision* ppr,
 	       pth->error_message);
     Tgcdm = y[0];
 
-    /* get background quantities at z */
-    class_call(background_tau_of_z(pba,
-				   z,
-				   &tau),
-	       pba->error_message,
+    class_call(thermodynamics_gcdmsoundspeed_derivs(z, y, dy, &tpaw, pth->error_message),
+	       pth->error_message,
 	       pth->error_message);
 
-    class_call(background_at_tau(pba,
-				 tau,
-				 pba->normal_info,
-				 pba->inter_normal,
-				 &last_index,
-				 pvecback),
-	       pba->error_message,
-	       pth->error_message);
-    
-    H        = pvecback[pba->index_bg_H];
-    a        = pvecback[pba->index_bg_a];
-    rho_g    = pvecback[pba->index_bg_rho_g];
-    rho_gcdm = pvecback[pba->index_bg_rho_cdm];
-
-    /* compute c_gcdm^2 */
-    dmu = (1.+z)*(1.+z)*pth->u_gcdm*3.*pba->H0*pba->H0/8./_PI_/_G_*pba->Omega0_cdm*pow(_c_,4)*_sigma_/1.e11/_eV_/_Mpc_over_m_;
-    dlnTdlna = -2. + 8./3.*rho_g/rho_gcdm*dmu/H*(Tg-Tgcdm)/a/Tgcdm;
-    cgcdm2 = _k_B_/pth->m_gcdm/_eV_*Tgcdm*(1. -1./3.*dlnTdlna);
+    dlnTdlna = -1.*(1.+z)/Tgcdm*dy[0];
+    cgcdm2 = _k_B_/pth->m_gcdm/_eV_/1.e9*Tgcdm*(1. -1./3.*dlnTdlna);
     
     /* store results to the soundspeed table */
     pth->z_table_gcdmsoundspeed[Nz-i-1] = zend;
