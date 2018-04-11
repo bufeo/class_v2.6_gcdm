@@ -976,7 +976,10 @@ int thermodynamics_free(
   free(pth->z_table);
   free(pth->thermodynamics_table);
   free(pth->d2thermodynamics_dz2_table);
-
+  if(pth->has_coupling_gcdm && pth->has_gcdm_soundspeed){
+    free(pth->z_table_gcdmsoundspeed);
+    free(pth->thermodynamics_table_gcdmsoundspeed);
+  }
   return _SUCCESS_;
 }
 
@@ -4194,6 +4197,46 @@ int thermodynamics_gcdmsoundspeed_output_data(struct background * pba,
     class_store_double(dataptr,pvecthermo[pth->index_th_gcdmsoundspeed_c],_TRUE_,storeidx);
     class_store_double(dataptr,pvecthermo[pth->index_th_gcdmsoundspeed_T],_TRUE_,storeidx);
 
+  }
+  return _SUCCESS_;
+}
+
+int thermodynamics_gcdmsoundspeed_at_z(
+				       struct background * pba,
+				       struct thermo * pth,
+				       double z,
+				       int * last_index,
+				       double * pvecback,
+				       double * pgcdmsoundspeed
+				       ){
+  
+  /** - define local variables */
+  double dmu;
+  
+  /** - if the requested time lies before the start of the interpolation table */
+  if (z >= pth->z_table_gcdmsoundspeed[pth->tt_size_gcdmsoundspeed-1]) {
+
+    pgcdmsoundspeed[pth->index_th_gcdmsoundspeed_T] = pba->T_cmb*(1.+z);
+    
+    dmu = (1.+z)*(1.+z)*pth->u_gcdm*3.*pba->H0*pba->H0/8./_PI_/_G_*pba->Omega0_cdm*pow(_c_,4)*_sigma_/1.e11/_eV_/_Mpc_over_m_;
+    pgcdmsoundspeed[pth->index_th_gcdmsoundspeed_c] = 4./3.*_k_B_/pth->m_gcdm/_eV_/1.e9*pba->T_cmb*(1.+z);
+  }
+  
+  /* otherwise interpolate linearily */
+  else{
+    
+    class_call(array_interpolate_linear(pth->z_table_gcdmsoundspeed,
+					pth->tt_size_gcdmsoundspeed,
+					pth->thermodynamics_table_gcdmsoundspeed,
+					pth->th_size_gcdmsoundspeed,
+					z,
+					last_index,
+					pgcdmsoundspeed,
+					pth->th_size_gcdmsoundspeed,
+					pth->error_message),
+	       pth->error_message,
+	       pth->error_message);
+    
   }
   return _SUCCESS_;
 }

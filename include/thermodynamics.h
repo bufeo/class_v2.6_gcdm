@@ -656,6 +656,16 @@ extern "C" {
 						int number_of_titles,
 						double *data
 						);
+
+  int thermodynamics_gcdmsoundspeed_at_z(
+					 struct background * pba,
+					 struct thermo * pth,
+					 double z,
+					 int * last_index,
+					 double * pvecback,
+					 double * pgcdmsoundspeed
+					 );
+
 #ifdef __cplusplus
 }
 #endif
