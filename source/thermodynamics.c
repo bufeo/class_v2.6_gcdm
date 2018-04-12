@@ -1067,9 +1067,9 @@ int thermodynamics_indices(
   /** however the start from zero again */
   if(pth->has_coupling_gcdm==_TRUE_ && pth->has_gcdm_soundspeed==_TRUE_){
     index = 0;
-    pth->index_th_gcdmsoundspeed_T = index;
-    index++;
     pth->index_th_gcdmsoundspeed_c = index;
+    index++;
+    pth->index_th_gcdmsoundspeed_T = index;
     index++;
 
     pth->th_size_gcdmsoundspeed = index;
@@ -4206,7 +4206,6 @@ int thermodynamics_gcdmsoundspeed_at_z(
 				       struct thermo * pth,
 				       double z,
 				       int * last_index,
-				       double * pvecback,
 				       double * pgcdmsoundspeed
 				       ){
   

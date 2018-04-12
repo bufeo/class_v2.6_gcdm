@@ -662,7 +662,6 @@ extern "C" {
 					 struct thermo * pth,
 					 double z,
 					 int * last_index,
-					 double * pvecback,
 					 double * pgcdmsoundspeed
 					 );
 

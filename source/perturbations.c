@@ -6923,8 +6923,12 @@ int perturb_derivs(double tau,
   /* for use with dcdm and dr */
   double f_dr, fprime_dr;
 
- /** for use with photon -cdm interactions */
+ /* for use with photon -cdm interactions */
   double S, dkappa_p_dmu;
+
+  /* for use with gcdm sound speed */
+  double gcdmsoundspeed[pth->th_size_gcdmsoundspeed];
+  int last_index_gcdmsoundspeed;
 
   /** - rename the fields of the input structure (just to avoid heavy notations) */
 
@@ -6978,6 +6982,15 @@ int perturb_derivs(double tau,
                               ppw),
              ppt->error_message,
              error_message);
+
+  if(pth->has_coupling_gcdm==_TRUE_ && pth->has_gcdm_soundspeed==_TRUE_)
+    class_call(thermodynamics_gcdmsoundspeed_at_z(pba,
+						  pth,
+						  1./pvecback[pba->index_bg_a]-1.,
+						  &last_index_gcdmsoundspeed,
+						  gcdmsoundspeed),
+	       pth->error_message,
+	       error_message);
 
   /** - compute related background quantities */
 
@@ -7259,8 +7272,11 @@ int perturb_derivs(double tau,
 
         dy[pv->index_pt_theta_cdm] = - a_prime_over_a*y[pv->index_pt_theta_cdm] + metric_euler; /* cdm velocity */
 
-	if(pth->has_coupling_gcdm==_TRUE_)
+	if(pth->has_coupling_gcdm==_TRUE_){
 	  dy[pv->index_pt_theta_cdm] += S*pvecthermo[pth->index_th_dmu_gcdm]*(theta_g-y[pv->index_pt_theta_cdm]);
+	  if (pth->has_gcdm_soundspeed==_TRUE_)
+	    dy[pv->index_pt_theta_cdm] += k2*gcdmsoundspeed[pth->index_th_gcdmsoundspeed_c]*y[pv->index_pt_delta_cdm];
+	  }
       }
 
       /** - ----> synchronous gauge: cdm density only (velocity set to zero by definition of the gauge) */
@@ -7977,6 +7993,10 @@ int perturb_tca_slip_and_shear(double * y,
   /* for use with gcdm interaction */
   double theta_cdm, S, dmu_gcdm;
 
+  /* for use with gcdm sound speed */
+  double gcdmsoundspeed[pth->th_size_gcdmsoundspeed];
+  int last_index_gcdmsoundspeed;
+
   /** - rename the fields of the input structure (just to avoid heavy notations) */
 
   pppaw = parameters_and_workspace;
@@ -8038,6 +8058,18 @@ int perturb_tca_slip_and_shear(double * y,
       S = 4./3.*pvecback[pba->index_bg_rho_g]/pvecback[pba->index_bg_rho_cdm];
       dmu_gcdm = pvecthermo[pth->index_th_dmu_gcdm];
     }
+
+  /* instead of passing the values through the backround structure we compute them again
+     for the future it would be nicer/cleaner to cange that */
+  if(pth->has_coupling_gcdm==_TRUE_ && pth->has_gcdm_soundspeed==_TRUE_)
+    class_call(thermodynamics_gcdmsoundspeed_at_z(pba,
+						  pth,
+						  1./pvecback[pba->index_bg_a]-1.,
+						  &last_index_gcdmsoundspeed,
+						  gcdmsoundspeed),
+	       pth->error_message,
+	       error_message);
+    
 
   /** - --> (c) compute metric-related quantities (depending on gauge; additional gauges can be coded below)
 
@@ -8101,6 +8133,8 @@ int perturb_tca_slip_and_shear(double * y,
 		 -4./3.*(-theta_g-metric_continuity)/4.)
 	    -a_prime_over_a*metric_euler)
 	+F*dmu_gcdm*(0.25*k2*delta_g + (1.+S)*dmu_gcdm*(theta_cdm-theta_g)+a_prime_over_a*theta_cdm);	
+      if(pth->has_gcdm_soundspeed==_TRUE_)
+	slip-=k2*tau_c/(1.+R)*dmu_gcdm*gcdmsoundspeed[pth->index_th_gcdmsoundspeed_c]*y[pv->index_pt_delta_cdm];
     }
 
     else{
