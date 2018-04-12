@@ -976,7 +976,7 @@ int thermodynamics_free(
   free(pth->z_table);
   free(pth->thermodynamics_table);
   free(pth->d2thermodynamics_dz2_table);
-  if(pth->has_coupling_gcdm && pth->has_gcdm_soundspeed){
+  if(pth->has_coupling_gcdm==_TRUE_ && pth->has_gcdm_soundspeed==_TRUE_){
     free(pth->z_table_gcdmsoundspeed);
     free(pth->thermodynamics_table_gcdmsoundspeed);
   }
@@ -1065,6 +1065,10 @@ int thermodynamics_indices(
 
   /** indices in the gcdm_soundspeed table also belong to the termo structure */
   /** however the start from zero again */
+  pth->tt_size_gcdmsoundspeed = 0;
+  pth->th_size_gcdmsoundspeed = 0;
+  pth->index_th_gcdmsoundspeed_c = 0;
+  pth->index_th_gcdmsoundspeed_T = 0;
   if(pth->has_coupling_gcdm==_TRUE_ && pth->has_gcdm_soundspeed==_TRUE_){
     index = 0;
     pth->index_th_gcdmsoundspeed_c = index;
@@ -1073,8 +1077,8 @@ int thermodynamics_indices(
     index++;
 
     pth->th_size_gcdmsoundspeed = index;
+    pth->tt_size_gcdmsoundspeed = 0;     //will be changed later
   }
-
 
   /** - initialization of all indices and flags in recombination structure */
   index = 0;

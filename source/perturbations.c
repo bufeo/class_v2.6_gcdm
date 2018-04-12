@@ -6927,7 +6927,7 @@ int perturb_derivs(double tau,
   double S, dkappa_p_dmu;
 
   /* for use with gcdm sound speed */
-  double gcdmsoundspeed[pth->th_size_gcdmsoundspeed];
+  double gcdmsoundspeed[2];
   int last_index_gcdmsoundspeed;
 
   /** - rename the fields of the input structure (just to avoid heavy notations) */
@@ -6983,7 +6983,7 @@ int perturb_derivs(double tau,
              ppt->error_message,
              error_message);
 
-  if(pth->has_coupling_gcdm==_TRUE_ && pth->has_gcdm_soundspeed==_TRUE_)
+  if(pth->has_coupling_gcdm==_TRUE_ && pth->has_gcdm_soundspeed==_TRUE_){
     class_call(thermodynamics_gcdmsoundspeed_at_z(pba,
 						  pth,
 						  1./pvecback[pba->index_bg_a]-1.,
@@ -6991,6 +6991,7 @@ int perturb_derivs(double tau,
 						  gcdmsoundspeed),
 	       pth->error_message,
 	       error_message);
+  }
 
   /** - compute related background quantities */
 
@@ -7994,7 +7995,7 @@ int perturb_tca_slip_and_shear(double * y,
   double theta_cdm, S, dmu_gcdm;
 
   /* for use with gcdm sound speed */
-  double gcdmsoundspeed[pth->th_size_gcdmsoundspeed];
+  double gcdmsoundspeed[2];
   int last_index_gcdmsoundspeed;
 
   /** - rename the fields of the input structure (just to avoid heavy notations) */
@@ -8061,6 +8062,7 @@ int perturb_tca_slip_and_shear(double * y,
 
   /* instead of passing the values through the backround structure we compute them again
      for the future it would be nicer/cleaner to cange that */
+  
   if(pth->has_coupling_gcdm==_TRUE_ && pth->has_gcdm_soundspeed==_TRUE_)
     class_call(thermodynamics_gcdmsoundspeed_at_z(pba,
 						  pth,
@@ -8069,6 +8071,7 @@ int perturb_tca_slip_and_shear(double * y,
 						  gcdmsoundspeed),
 	       pth->error_message,
 	       error_message);
+  
     
 
   /** - --> (c) compute metric-related quantities (depending on gauge; additional gauges can be coded below)
@@ -8132,9 +8135,11 @@ int perturb_tca_slip_and_shear(double * y,
 		 +cb2*(-theta_b-metric_continuity)
 		 -4./3.*(-theta_g-metric_continuity)/4.)
 	    -a_prime_over_a*metric_euler)
-	+F*dmu_gcdm*(0.25*k2*delta_g + (1.+S)*dmu_gcdm*(theta_cdm-theta_g)+a_prime_over_a*theta_cdm);	
-      if(pth->has_gcdm_soundspeed==_TRUE_)
-	slip-=k2*tau_c/(1.+R)*dmu_gcdm*gcdmsoundspeed[pth->index_th_gcdmsoundspeed_c]*y[pv->index_pt_delta_cdm];
+	+F*dmu_gcdm*(0.25*k2*delta_g + (1.+S)*dmu_gcdm*(theta_cdm-theta_g)+a_prime_over_a*theta_cdm);
+      
+      if(pth->has_gcdm_soundspeed==_TRUE_){
+      	slip=k2*tau_c/(1.+R)*dmu_gcdm*gcdmsoundspeed[pth->index_th_gcdmsoundspeed_c]*y[pv->index_pt_delta_cdm];
+      }
     }
 
     else{
