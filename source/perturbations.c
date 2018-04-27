@@ -8042,7 +8042,7 @@ int perturb_tca_slip_and_shear(double * y,
   /** - --> (b) define short-cut notations used only in tight-coupling approximation */
   tau_c = 1./pvecthermo[pth->index_th_dkappa]; /* inverse of opacity */
   dtau_c = -pvecthermo[pth->index_th_ddkappa]*tau_c*tau_c; /* its first derivative wrt conformal time */
-  F = tau_c/(1+R); /* F = tau_c/(1+R) */
+  F = tau_c/(1.+R); /* F = tau_c/(1+R) */
   if (ppr->tight_coupling_approximation >= (int)second_order_CLASS) {
     F_prime = dtau_c/(1+R)+tau_c*a_prime_over_a*R/(1+R)/(1+R); /*F' needed by second_order_CLASS and compromise_CLASS */
     if (ppr->tight_coupling_approximation == (int)second_order_CLASS) {
@@ -8138,7 +8138,7 @@ int perturb_tca_slip_and_shear(double * y,
 	+F*dmu_gcdm*(0.25*k2*delta_g + (1.+S)*dmu_gcdm*(theta_cdm-theta_g)+a_prime_over_a*theta_cdm);
       
       if(pth->has_gcdm_soundspeed==_TRUE_){
-      	slip=k2*tau_c/(1.+R)*dmu_gcdm*gcdmsoundspeed[pth->index_th_gcdmsoundspeed_c]*y[pv->index_pt_delta_cdm];
+      	slip -= k2*tau_c/(1.+R)*dmu_gcdm*gcdmsoundspeed[pth->index_th_gcdmsoundspeed_c]*y[pv->index_pt_delta_cdm];
       }
     }
 

@@ -3933,7 +3933,7 @@ int thermodynamics_gcdmsoundspeed(struct precision* ppr,
   double zinitial;
   double tau_early, tau_late, tau_mid;
   double z_early, z_late, z_mid;
-  double zstart, zend, z;
+  double zstart, zend;
   double Tcmb;
   double dmu, cgcdm2, Tgcdm;
   double H, a, rho_g, rho_gcdm, Tg, tau, dlnTdlna;
@@ -4053,10 +4053,9 @@ int thermodynamics_gcdmsoundspeed(struct precision* ppr,
   }
   
   /** - impose initial consditions */
-  z = zinitial;
-  y[0] = Tcmb*(1.+z);
+  y[0] = Tcmb*(1.+zinitial);
   
-  printf(" z_initial = %f\n",z);
+  printf(" z_initial = %f\n",zinitial);
 
   /** - loop over redshifts,
         for each step find T_gcdm using the generic integrator
@@ -4068,7 +4067,6 @@ int thermodynamics_gcdmsoundspeed(struct precision* ppr,
 
     zstart = zinitial * (double)(Nz-i)/  (double)Nz;
     zend   = zinitial * (double)(Nz-i-1)/(double)Nz;
-    z = zend;
     
     /* numerical integration to find T_gcdm */
     class_call(generic_integrator(thermodynamics_gcdmsoundspeed_derivs,
@@ -4083,12 +4081,12 @@ int thermodynamics_gcdmsoundspeed(struct precision* ppr,
 	       pth->error_message);
     Tgcdm = y[0];
 
-    class_call(thermodynamics_gcdmsoundspeed_derivs(z, y, dy, &tpaw, pth->error_message),
+    class_call(thermodynamics_gcdmsoundspeed_derivs(zend, y, dy, &tpaw, pth->error_message),
 	       pth->error_message,
 	       pth->error_message);
 
-    dlnTdlna = -1.*(1.+z)/Tgcdm*dy[0];
-    cgcdm2 = _k_B_/pth->m_gcdm/_eV_/1.e9*Tgcdm*(1. -1./3.*dlnTdlna);
+    dlnTdlna = -1.*(1.+zend)/Tgcdm*dy[0];
+    cgcdm2 = _k_B_/pth->m_gcdm/_eV_/1.e9*Tgcdm*(1. -dlnTdlna/3.);
     
     /* store results to the soundspeed table */
     pth->z_table_gcdmsoundspeed[Nz-i-1] = zend;
