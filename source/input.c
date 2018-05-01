@@ -3305,7 +3305,7 @@ int input_default_precision ( struct precision * ppr ) {
   ppr->thermo_rate_smoothing_radius=50;
 
   /* for gcdm soundspeed */
-  ppr->start_gcdmsoundspeed_at_h_over_dmu = 0.01;
+  ppr->start_gcdmsoundspeed_at_h_over_dmu = 0.001;
   ppr->gcdmsoundspeed_Nz = 20000;
   ppr->tol_z_gcdmsoundspeed = 0.01;
 
